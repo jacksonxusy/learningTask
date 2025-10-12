@@ -1,4 +1,4 @@
-package golangBasicPractice
+package main
 
 import "sort"
 
