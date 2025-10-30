@@ -13,10 +13,10 @@ import (
 //编写Go代码，使用Sqlx执行一个复杂的查询，例如查询价格大于 50 元的书籍，并将结果映射到 Book 结构体切片中，确保类型安全。
 
 type Book struct {
-	ID     int    `db:"id"`
-	Title  string `db:"title"`
-	Author string `db:"author"`
-	Price  int    `db:"price"`
+	ID     int    `source:"id"`
+	Title  string `source:"title"`
+	Author string `source:"author"`
+	Price  int    `source:"price"`
 }
 
 func main() {

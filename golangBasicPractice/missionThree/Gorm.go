@@ -27,7 +27,7 @@ type Post struct {
 	AuthorID      int    `gorm:"column:author_id"`
 	Author        User   `gorm:"foreignKey:AuthorID;references:ID"`
 	Comments      []Comment
-	CommentCount  int    `gorm:"column:comment_count;default:0"`         // Add this field
+	CommentCount  int    `gorm:"column:comment_count;default:0"`      // Add this field
 	CommentStatus string `gorm:"column:comment_status;default:'有评论'"` // Add this field
 }
 
@@ -69,7 +69,7 @@ func main() {
 	//	Content:  "这是第三篇文章的内容",
 	//	AuthorID: 1,
 	//}
-	//db.Create(&post3)
+	//source.Create(&post3)
 
 	//var user = User{
 	//	Name:     "张三",
@@ -97,11 +97,11 @@ func main() {
 	//	Content: "这是第一篇文章的第二个评论",
 	//}
 
-	//db.Create(&user)
+	//source.Create(&user)
 	//var posts = []Post{post, post2}
 	//var comments = []Comment{comment, comment2, comment3}
-	//db.Create(&posts)
-	//db.Create(&comments)
+	//source.Create(&posts)
+	//source.Create(&comments)
 	// 2.1 编写Go代码，使用Gorm查询某个用户发布的所有文章及其对应的评论信息。
 	var posts []Post
 	db.Where("author_id = ?", 1).Preload("Comments").Find(&posts)

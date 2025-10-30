@@ -13,10 +13,10 @@ import (
 //编写Go代码，使用Sqlx查询 employees 表中工资最高的员工信息，并将结果映射到一个 Employee 结构体中。
 
 type Employee struct {
-	ID         int    `db:"id"`
-	Name       string `db:"name"`
-	Department string `db:"department"`
-	Salary     int    `db:"salary"`
+	ID         int    `source:"id"`
+	Name       string `source:"name"`
+	Department string `source:"department"`
+	Salary     int    `source:"salary"`
 }
 
 func main() {
@@ -24,19 +24,19 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	//db.AutoMigrate(&Employee{})
-	//db.Create(&Employee{
+	//source.AutoMigrate(&Employee{})
+	//source.Create(&Employee{
 	//	Name:       "张三",
 	//	Department: "技术部",
 	//	Salary:     5000,
 	//})
-	//db.Create(&Employee{
+	//source.Create(&Employee{
 	//	Name:       "李四",
 	//	Department: "技术部",
 	//	Salary:     6000,
 	//})
 	//var res = []Employee{}
-	//db.Where("department = ?", "技术部").Find(&res)
+	//source.Where("department = ?", "技术部").Find(&res)
 	//fmt.Println(res)
 
 	var maxSalaryEmployee Employee
