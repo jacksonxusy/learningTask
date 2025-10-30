@@ -1,0 +1,53 @@
+# Go binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules
+vendor/
+go.work
+go.work.sum
+go.sum
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build directories
+bin/
+build/
+dist/
+
+# Mission binaries
+missionOne/missionOne
+missionTwo/missionTwo
+missionThree/missionThree
+missionFour/missionFour
+
+# Config files
+.env
+configs/config.yaml
+configs/config.toml
+configs/config.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
