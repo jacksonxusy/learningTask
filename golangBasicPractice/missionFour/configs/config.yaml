@@ -1,0 +1,28 @@
+app:
+  name: "Blog Management System"
+  version: "1.0.0"
+  env: "development"
+  port: 8080
+  debug: true
+
+database:
+  host: "127.0.0.1"
+  port: 3306
+  name: "four"
+  username: "root"
+  password: "root1234"
+  charset: "utf8mb4"
+  parse_time: true
+  loc: "Local"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: "1h"
+
+jwt:
+  secret: "jackson"
+  expiry: "24h"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
