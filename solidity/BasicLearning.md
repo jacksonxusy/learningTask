@@ -1,10 +1,5 @@
 # Solidity Basic Learning Outline
 
-## 1. Introduction to Solidity
-- What is Solidity
-- Ethereum Smart Contracts Overview
-- Solidity Version History
-- Development Environment Setup
 
 ## 2. Basic Syntax
 ### 2.1 Contract Structure
@@ -144,15 +139,30 @@ Rule of thumb:
 - keccak256, sha256
 - require, assert, revert
 - this, msg, block, tx
-require(_owners[tokenId] == address(0), "token already minted");
+'require(_owners[tokenId] == address(0), "token already minted");
 if condition is true, then go ahead
-if no, then revert with error message.
+if no, then revert with error message.'
 
 ## 4. Control Structures
 - if-else statements
 - for loops
 - while loops
 - break and continue
+
+**key difference between call and delegate call**
+wallet address A => call contract B ==> call contract C.
+conext: contract B.
+msg.sender = A. msg.value = A.
+context: contract C.
+msg.sender = B. msg.value = B;
+
+wallet address A => call contract B ==> delegate call contract C.
+conext: contract B.
+msg.sender = A. msg.value = A.
+context: contract C.
+msg.sender = A. msg.value = A;
+
+
 
 ## 5. Object-Oriented Programming
 ### 5.1 Inheritance
@@ -183,12 +193,12 @@ Example comparison
 
 Solidity:
 
-function divide(uint256 a, uint256 b) public pure returns (uint256) {
+'function divide'(uint256 a, uint256 b) public pure returns (uint256) {
     if (b == 0) {
         revert("Division by zero");
     }
     return a / b;
-}
+}'
 
 Java:
 
@@ -228,19 +238,66 @@ Same logic — the main difference is Solidity’s revert undoes all state chang
 withdraw function.
   Without Data (Simple ETH Transfer):
 
-  // Send ETH with no additional data
+ ' // Send ETH with no additional data
   (bool success, ) = msg.sender.call{value: 1 ether}("");
   //                                                 ↑
   //                                            No function call data
+  '
 
   With Data (Function Call):
 
   // Send ETH AND call a function
-  (bool success, ) = targetContract.call{value: 1 ether}(
+  '(bool success, ) = targetContract.call{value: 1 ether}(
       abi.encodeWithSignature("deposit()")
   );
   //                                                    ↑
   //                                            Function call data
+  '
+
+**two ways to call other contract**
+1 use call to other contract.
+format: targetContractAddress.call(bytecode).
+bytecode can be acquired by abi.encodeWithSignature("function signature", concrete parameter spilted by comma);
+eg: abi.encodeWithSignature("f(uint256,address)", _x, _addr)。
+and we can send eth and gas to function:
+'targetContractAddress.call{value:amount, gas: gas amount}(bytecode).'
+
+2 use Interfaces:
+eg,ERC20 contract can be called like this: ERC20(token).**
+'  contract SafeCaller {
+      IERC20 public token;
+      IVault public vault;
+
+      constructor(address _token, address _vault) {
+          token = IERC20(_token);
+          vault = IVault(_vault);
+      }
+
+      function safeTransfer(address to, uint256 amount) external {
+          // Type-safe, compile-time checked calls
+          bool success = token.transfer(to, amount);
+          require(success, "Transfer failed");
+      }
+
+      function safeDeposit(uint256 amount) external {
+          vault.deposit(amount);
+      }
+  }'
+ **Best Practice Summary**
+
+  When to Use Interfaces:
+
+  - ✅ Known ABI/contract type
+  - ✅ Type safety needed
+  - ✅ Compile-time checking
+  - ✅ Regular contract interactions
+
+  When to Use Low-Level Calls:
+
+  - ✅ Unknown/ dynamic ABI
+  - ✅ Emergency fallbacks
+  - ✅ Proxy patterns
+  - ✅ Sending ETH ({value: amount})
 
 
 ## 10. Gas Optimization
