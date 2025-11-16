@@ -139,9 +139,10 @@ Rule of thumb:
 - keccak256, sha256
 - require, assert, revert
 - this, msg, block, tx
-'require(_owners[tokenId] == address(0), "token already minted");'
-if condition is true, then go ahead
-if no, then revert with error message.'
+```solidity
+require(_owners[tokenId] == address(0), "token already minted");
+```
+If condition is true, then go ahead. If no, then revert with error message.
 
 ## 4. Control Structures
 - if-else statements
@@ -195,24 +196,24 @@ msg.sender = A. msg.value = A;
 Example comparison
 
 Solidity:
-'''
-function divide'(uint256 a, uint256 b) public pure returns (uint256) {
+```solidity
+function divide(uint256 a, uint256 b) public pure returns (uint256) {
     if (b == 0) {
         revert("Division by zero");
     }
     return a / b;
 }
-'''
+```
 Java:
 
-'''
+```java
 int divide(int a, int b) {
     if (b == 0) {
         throw new IllegalArgumentException("Division by zero");
     }
     return a / b;
 }
-'''
+```
 
 Same logic — the main difference is Solidity’s revert undoes all state changes and costs gas, while Java’s throw just stops execution.
 
@@ -243,23 +244,23 @@ Same logic — the main difference is Solidity’s revert undoes all state chang
 withdraw function.
   Without Data (Simple ETH Transfer):
 
-'''
-  // Send ETH with no additional data
-  (bool success, ) = msg.sender.call{value: 1 ether}("");
-  //                                                 ↑
-  //                                            No function call data
-'''
+```solidity
+// Send ETH with no additional data
+(bool success, ) = msg.sender.call{value: 1 ether}("");
+//                                                 ↑
+//                                            No function call data
+```
 
   With Data (Function Call):
 
-'''
-  // Send ETH AND call a function
-  (bool success, ) = targetContract.call{value: 1 ether}(
-      abi.encodeWithSignature("deposit()")
-  );
-  //                                                    ↑
-  //                                            Function call data
-'''
+```solidity
+// Send ETH AND call a function
+(bool success, ) = targetContract.call{value: 1 ether}(
+    abi.encodeWithSignature("deposit()")
+);
+//                                                    ↑
+//                                            Function call data
+```
 
 **two ways to call other contract**
 1 use call to other contract.
@@ -272,27 +273,27 @@ and we can send eth and gas to function:
 2 use Interfaces:
 eg,ERC20 contract can be called like this: ERC20(token).
 
-'''
-  contract SafeCaller {
-      IERC20 public token;
-      IVault public vault;
+```solidity
+contract SafeCaller {
+    IERC20 public token;
+    IVault public vault;
 
-      constructor(address _token, address _vault) {
-          token = IERC20(_token);
-          vault = IVault(_vault);
-      }
+    constructor(address _token, address _vault) {
+        token = IERC20(_token);
+        vault = IVault(_vault);
+    }
 
-      function safeTransfer(address to, uint256 amount) external {
-          // Type-safe, compile-time checked calls
-          bool success = token.transfer(to, amount);
-          require(success, "Transfer failed");
-      }
+    function safeTransfer(address to, uint256 amount) external {
+        // Type-safe, compile-time checked calls
+        bool success = token.transfer(to, amount);
+        require(success, "Transfer failed");
+    }
 
-      function safeDeposit(uint256 amount) external {
-          vault.deposit(amount);
-      }
-  }
-'''
+    function safeDeposit(uint256 amount) external {
+        vault.deposit(amount);
+    }
+}
+```
 
  **Best Practice Summary**
 
@@ -313,7 +314,7 @@ eg,ERC20 contract can be called like this: ERC20(token).
 **FallBack and Recevie**
 
 1. receive ETH
-2. handle function call not existed in contract. (**especially in proxy contract**)
+2. handle function call not existed in contract. (**especially in proxy)
 
 
 ## 10. Gas Optimization
@@ -371,27 +372,27 @@ The Approval Process:
 
   Step 1: User First Approves the Airdrop Contract
 
-'''
-  // User calls the ERC20 token contract directly:
-  tokenContract.approve(address(airdropContract), 1000);
-'''
+```solidity
+// User calls the ERC20 token contract directly:
+tokenContract.approve(address(airdropContract), 1000);
+```
 
-'''
-  // This sets:
-  allowance["user_address"]["airdrop_contract_address"] = 1000;
-  // Meaning: Airdrop contract can spend 1000 of user's tokens
-'''
+```solidity
+// This sets:
+allowance["user_address"]["airdrop_contract_address"] = 1000;
+// Meaning: Airdrop contract can spend 1000 of user's tokens
+```
 
   Step 2: User Calls the Airdrop Function
 
-'''
-  // User calls the airdrop contract:
-  airdropContract.multiTransferToken(
-      tokenContract,           // The ERC20 token
-      [addr1, addr2, addr3],   // Recipients
-      [100, 200, 300]         // Amounts
-  );
-'''
+```solidity
+// User calls the airdrop contract:
+airdropContract.multiTransferToken(
+    tokenContract,           // The ERC20 token
+    [addr1, addr2, addr3],   // Recipients
+    [100, 200, 300]         // Amounts
+);
+```
 
   Step 3: Airdrop Contract Uses the Allowance
 
@@ -407,31 +408,31 @@ The Approval Process:
   // balanceOf[recipient] += amount;
 
   The Allowance Mapping Structure:
-'''
-  mapping(address => mapping(address => uint256)) public allowance;
-  //                 ↑         ↑             ↑
-  //              owner    spender    amount allowed
-'''
+```solidity
+mapping(address => mapping(address => uint256)) public allowance;
+//                 ↑         ↑             ↑
+//              owner    spender    amount allowed
+```
 
   What This Means:
 
-'''
-  allowance["0x123..."]["0x456..."] = 1000;  // 0x456 can spend 1000 of 0x123's tokens
-  allowance["0x123..."]["0x789..."] = 500;   // 0x789 can spend 500 of 0x123's tokens
-  allowance["0xABC..."]["0x456..."] = 200;   // 0x456 can spend 200 of 0xABC's tokens
-'''
+```solidity
+allowance["0x123..."]["0x456..."] = 1000;  // 0x456 can spend 1000 of 0x123's tokens
+allowance["0x123..."]["0x789..."] = 500;   // 0x789 can spend 500 of 0x123's tokens
+allowance["0xABC..."]["0x456..."] = 200;   // 0x456 can spend 200 of 0xABC's tokens
+```
 
   Visual Flow:
 
-'''
-  User (0x123)                Airdrop Contract (0x456)            Token Contract
-       | approve(1000)  ──────────────────→                         |
-       |                                         transferFrom(0x123, 0x789, 100) ──→
-       |                                                              │
-       |                                                              │ Transfer tokens
-       |                                                              │
-       |                                                          Token Transferred!
-'''
+```text
+User (0x123)                Airdrop Contract (0x456)            Token Contract
+     | approve(1000)  ──────────────────→                         |
+     |                                         transferFrom(0x123, 0x789, 100) ──→
+     |                                                              │
+     |                                                              │ Transfer tokens
+     |                                                              │
+     |                                                          Token Transferred!
+```
 
   Why This Design:
 
@@ -470,13 +471,13 @@ approve and setApproval difference:
 approve is only for one address, if you call it again, the first approval address will lose approval.
 **ERC721 transfer function**.
 in ERC721 function, it has an approve function.
-'''
-function _transfer(address owner, address from, address to, uint256 tokenId) private  {
+```solidity
+function _transfer(address owner, address from, address to, uint256 tokenId) private {
     require(from == owner, "not owner");
     require(to != address(0), "transfer to the zero address");
     _approve(owner, address(0), tokenId);
 }
-'''
+```
 _approve(owner, address(0), tokenId); this is to set tokenId's approval to address(0), clearing the approval when token is transferred.
   Why this is necessary:
   1. Security: When you transfer a token, any existing approvals should be canceled
@@ -484,26 +485,26 @@ _approve(owner, address(0), tokenId); this is to set tokenId's approval to addre
   3. State consistency: The new owner starts with a "clean slate" - no approvals exist
 
 **ERC721 transfer checkReceive function.**
-'''
+```solidity
 function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory data) private {
-        if (to.code.length > 0) {
-            try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data) returns (bytes4 retval) {
-                if (retval != IERC721Receiver.onERC721Received.selector) {
-                    revert ERC721InvalidReceiver(to);
-                }
-            } catch (bytes memory reason) {
-                if (reason.length == 0) {
-                    revert ERC721InvalidReceiver(to);
-                } else {
-                    /// @solidity memory-safe-assembly
-                    assembly {
-                        revert(add(32, reason), mload(reason))
-                    }
+    if (to.code.length > 0) {
+        try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data) returns (bytes4 retval) {
+            if (retval != IERC721Receiver.onERC721Received.selector) {
+                revert ERC721InvalidReceiver(to);
+            }
+        } catch (bytes memory reason) {
+            if (reason.length == 0) {
+                revert ERC721InvalidReceiver(to);
+            } else {
+                /// @solidity memory-safe-assembly
+                assembly {
+                    revert(add(32, reason), mload(reason))
                 }
             }
         }
     }
-'''
+}
+```
 breaking down:
 1. check if recipient is a contract:
  if (to.code.length > 0) {  // to.code.length > 0 = is contract
