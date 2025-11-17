@@ -328,6 +328,11 @@ contract SafeCaller {
 - Access control
 - Input validation
 
+** digit signature of ETH **  
+contract ulitilize function and its parameter to generate transaction 
+hash. wallet produce signature via its private key and transction hash. then contract validate its signature, recovering its address (derived from public key), 
+cheking if it equals to public key of expected address, if pass, then execute transation. 
+
 ## 12. Development Tools
 ### 12.1 Development Environment
 - Remix IDE
@@ -523,20 +528,75 @@ it just check if the contract claims to support ERC721, not verify if the contra
 - Decentralized exchange
 - Lending protocol
 
+**ERC4626 break down**
+```
+function deposit(uint256 assets, address receiver) public virtual returns (uint256 shares) {
+
+    shares = previewDeposit(assets);
+
+    _asset.transferFrom(msg.sender, address(this), assets);
+    _mint(receiver, shares);
+
+
+    emit Deposit(msg.sender, receiver, assets, shares);
+}
+```
+1. calculates how many vault shares the user will receive.
+2. user's asset transferred to valut contract.
+3. valut creates new shares for the receiver.
+ Correct Order:
+
+  1. Calculate ✅ (Check)
+  2. Transfer assets ✅ (Interaction 1)
+  3. Mint shares ✅ (Effect)
+  4. Emit event ✅ (Logging)
+
+  Why This Order Matters:
+
+```
+  // VULNERABLE (if order was wrong):
+  _mint(receiver, shares);           // First mint
+  _asset.transferFrom(...);           // Then transfer
+
+  // Attacker could re-enter during transfer and:
+  // - Call deposit again before first deposit completes
+  // - Get extra shares for same assets
+```
+deployed two contract(ERC20 and ERC4626), and execute the following actions.  
+
+1. ERC20 contract, mint 10000 tokens. and approve ERC4626 contract address and 10000 token.
+2. ERC4626 contract deposit 1000 token to wallet address.
+
+balanceOf and totoalSupply amount change like below:
+
+Before Deposit:
+// ERC20 contract:
+```
+tokenA.balanceOf(myWallet) = 10000.
+totoalSupply = 10000.
+```
+
+After 1000 Token A Deposit:  
+`_asset.transferFrom(msg.sender, address(this), assets);` 
+this transfer 1000 token to contract B. then it changed to this:  
+```
+// ERC20 contract:
+tokenA.balanceOf(myWallet) = 9000.
+tokenA.balanceOf(valut contract) = 1000.
+totoalSupply = 10000.
+```
+then called ` _mint(receiver, shares);` it changed to this:
+```
+// ERC4626 contract:
+tokenB.balanceOf(myWallet) = 1000.
+totoalSupply = 1000;
+```
+
+
+
 ### 15.3 Complex Projects
 - DAO governance contract
 - Marketplace for collectibles
 - DeFi protocols
 
-## Learning Resources
-- [Solidity Official Documentation](https://docs.soliditylang.org/)
-- [CryptoZombies](https://cryptozombies.io/)
-- [Remix IDE](https://remix.ethereum.org/)
-- [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 
-## Learning Tips
-1. Start with simple contracts and gradually increase complexity
-2. Write more code and test frequently
-3. Focus on security and learn common attack vectors
-4. Participate in open source projects and read quality contract code
-5. Join Solidity communities and interact with other developers
