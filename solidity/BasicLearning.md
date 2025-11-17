@@ -592,7 +592,7 @@ tokenB.balanceOf(myWallet) = 1000.
 totoalSupply = 1000;
 ```
 **note: token flow work between the two contracts**
-1. checker who is caller, 
+1. checker who is caller.  
 `_asset.transferFrom(msg.sender, address(this), assets);` this caller is _asset.  
 `_mint(receiver, shares);` this caller is current contract.
 2. using current caller's state variable to calculate.  
