@@ -97,6 +97,8 @@ State Variables:
   Bottom line: Use calldata for external parameters when you don't need to modify the data. Use memory when you need to modify or for 
   internal functions.
 
+**Summary: calldata for input (cheaper, immutable), memory for return (required for construction).**
+
    Types Summary:
 
   | Type     | Category  | Needs Location?                 |
@@ -165,6 +167,34 @@ conext: contract B.
 msg.sender = A. msg.value = A.
 context: contract C.
 msg.sender = A. msg.value = A;
+
+eg: in this code sninppet, `tokenOut.transfer(msg.sender, amountOut);`. 
+its underlying code msg.sender === this contract  address, not wallet address, becuase this 
+contract called him.
+```
+function swap(uint amountIn, IERC20 tokenIn, uint amountOutMin) external returns (uint amountOut, IERC20 tokenOut){
+    require(amountIn > 0, 'INSUFFICIENT_OUTPUT_AMOUNT');
+    require(tokenIn == token0 || tokenIn == token1, 'INVALID_TOKEN');
+
+    uint balance0 = token0.balanceOf(address(this));
+    uint balance1 = token1.balanceOf(address(this));
+
+    if(tokenIn == token0){
+        // 如果是token0交换token1
+        tokenOut = token1;
+        // 计算能交换出的token1数量
+        amountOut = getAmountOut(amountIn, balance0, balance1);
+        require(amountOut > amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
+        // 进行交换
+        tokenIn.transferFrom(msg.sender, address(this), amountIn);
+        tokenOut.transfer(msg.sender, amountOut);
+```
+** ERC20 when to use transfer function or transferFrom function **
+it depends your current entity wants to do what action.
+- if you wants to take token from others, use transferFrom.
+- if you wants to transfer your token to others, use transfer.  
+in above code swap function, current contract wants to token from user, and transfer tokenOut to user.
+
 
 
 
@@ -598,6 +628,11 @@ totoalSupply = 1000;
 2. using current caller's state variable to calculate.  
 `_asset.transferFrom(msg.sender, address(this), assets);` this use _asset balance mapping to calculate.  
 `_mint(receiver, shares);` this use current contract balance mapping to calcalate.
+
+** funciton Purpose difference between mint and deposit **. 
+Action	User Chooses	Vault Calculates
+deposit()	assets	shares
+mint()	shares	assets
 
 
 
