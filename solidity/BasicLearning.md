@@ -195,6 +195,18 @@ it depends your current entity wants to do what action.
 - if you wants to transfer your token to others, use transfer.  
 in above code swap function, current contract wants to token from user, and transfer tokenOut to user.
 
+** difference between internal call and external call **
+```
+  function secretSlector() public   pure returns(bytes4){
+      return bytes4(keccak256("putCurEpochConPubKeyBytes(bytes)"));
+  }
+
+  function hackSlector() external  returns(bytes4){
+      secretSlector(); // internal call, inside secretSlector msg.sender = your wallet address.
+      this.secretSlector(); // external call, inside secretSlector msg.sender = current contract address.
+      return bytes4(keccak256("f1121318093(bytes,bytes,uint64)"));
+  } 
+```
 
 
 
@@ -499,11 +511,121 @@ approve and setApproval difference:
   | Feature     | approve()                   | setApprovalForAll()      |
   |-------------|-----------------------------|--------------------------|
   | Scope       | One token                   | All tokens               |
-  | Storage     | mapping(uint256 => address) | mapping(address => bool) |
+  | Storage     | mapping(uint256 => address) | mapping(address => mapping(address => bool)) private _operatorApprovals; |
   | Gas         | Lower per approval          | Higher (sets for all)    |
   | Flexibility | Granular control            | Convenient bulk control  |
 
-approve is only for one address, if you call it again, the first approval address will lose approval.
+- approve is only for one address, if you call it again, the first approval address will lose approval.
+- setApprovalForAll allows an NFT owner to grant permission to another address to manage ALL of their NFTs from a specific collection.
+   It's a powerful permission mechanism.
+
+```
+// Example Usage Contract
+  contract NFTUser {
+      IERC721 public nftContract;
+      NFTMarketplace public marketplace;
+
+      constructor(address _nftContract, address _marketplace) {
+          nftContract = IERC721(_nftContract);
+          marketplace = NFTMarketplace(_marketplace);
+      }
+
+      // Step 1: Approve marketplace to manage ALL your NFTs
+      function approveMarketplace() external {
+          nftContract.setApprovalForAll(address(marketplace), true);
+          console.log("Marketplace approved to manage all NFTs");
+      }
+
+      // Step 2: List multiple NFTs without individual approvals
+      function listMultipleNFTs(uint256[] tokenIds, uint256[] prices) external {
+          for (uint i = 0; i < tokenIds.length; i++) {
+              marketplace.listItem(tokenIds[i], prices[i]);
+              console.log("NFT", tokenIds[i], "listed for", prices[i], "wei");
+          }
+      }
+
+      // Step 3: Revoke marketplace approval when done
+      function revokeMarketplaceApproval() external {
+          nftContract.setApprovalForAll(address(marketplace), false);
+          console.log("Marketplace approval revoked");
+      }
+
+      // Check if marketplace is approved
+      function checkApprovalStatus() external view returns (bool) {
+          return nftContract.isApprovedForAll(address(this), address(marketplace));
+      }
+  }
+
+
+# Example marketNFT
+  contract NFTMarketplace {
+      // NFT contract address
+      IERC721 public nftContract;
+
+      struct Listing {
+          address seller;
+          uint256 tokenId;
+          uint256 price;
+      }
+
+      mapping(uint256 => Listing) public listings;
+
+      event Listed(uint256 indexed tokenId, uint256 price);
+      event Sold(uint256 indexed tokenId, address buyer);
+
+      constructor(address _nftContract) {
+          nftContract = IERC721(_nftContract);
+      }
+
+      // Seller lists their NFT for sale
+      // REQUIRES: seller must have called setApprovalForAll(marketplace, true)
+      function listItem(uint256 tokenId, uint256 price) external {
+          // Check that marketplace is approved to manage seller's NFTs
+          require(
+              nftContract.isApprovedForAll(msg.sender, address(this)),
+              "Marketplace not approved for all NFTs"
+          );
+
+          // Verify caller owns the NFT
+          require(
+              nftContract.ownerOf(tokenId) == msg.sender,
+              "Not token owner"
+          );
+
+          listings[tokenId] = Listing({
+              seller: msg.sender,
+              tokenId: tokenId,
+              price: price
+          });
+
+          emit Listed(tokenId, price);
+      }
+
+      // Buyer purchases listed NFT
+      function buyItem(uint256 tokenId) external payable {
+          Listing memory listing = listings[tokenId];
+          require(listing.price > 0, "Item not for sale");
+          require(msg.value >= listing.price, "Insufficient payment");
+
+          // Transfer NFT from seller to buyer
+          nftContract.transferFrom(listing.seller, msg.sender, tokenId);
+
+          // Pay seller (minus marketplace fee)
+          payable(listing.seller).transfer(listing.price);
+
+          // Refund excess payment
+          if (msg.value > listing.price) {
+              payable(msg.sender).transfer(msg.value - listing.price);
+          }
+
+          delete listings[tokenId];
+          emit Sold(tokenId, msg.sender);
+      }
+  }
+
+
+```
+
 **ERC721 transfer function**.
 in ERC721 function, it has an approve function.
 ```solidity
@@ -629,10 +751,114 @@ totoalSupply = 1000;
 `_asset.transferFrom(msg.sender, address(this), assets);` this use _asset balance mapping to calculate.  
 `_mint(receiver, shares);` this use current contract balance mapping to calcalate.
 
+
+**Dex getAmounOut break down**
+```
+function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) public pure returns(uint amountOut) {
+    require (amountIn > 0, "insufficient input");
+    require (reserveIn > 0 && reserveOut > 0, "insufficient liquidity");
+    amountOut = amountIn * reserveOut / (reserveIn + amountIn);
+}
+```
+  Core Formula:
+
+  amountOut = amountIn * reserveOut / (reserveIn + amountIn)
+
+  AMM Pool Mechanics:
+```
+  // Before swap:
+  reserveIn = 1000   // Pool has 1000 input tokens
+  reserveOut = 2000  // Pool has 2000 output tokens
+
+  // You want to swap 100 input tokens:
+  amountIn = 100
+
+  // New pool state after swap:
+  newReserveIn = 1000 + 100 = 1100
+  newReserveOut = 2000 - amountOut = ?
+
+  // Constant product formula: k = reserveIn * reserveOut
+  // 1000 * 2000 = 1100 * newReserveOut
+  // newReserveOut = (1000 * 2000) / 1100 = 1818
+  // amountOut = 2000 - 1818 = 182
+```
+They're actually the same mathematically:
+
+// Full formula:
+`amountOut = reserveOut - (reserveIn * reserveOut) / (reserveIn + amountIn)`
+
+// Simplified formula:
+`amountOut = amountIn * reserveOut / (reserveIn + amountIn)`
+
 ** funciton Purpose difference between mint and deposit **. 
 Action	User Chooses	Vault Calculates
 deposit()	assets	shares
 mint()	shares	assets
+
+
+⏺ **EVM Atomicity Summary**
+
+  What is EVM Atomicity?
+
+  EVM transaction atomicity ensures that every smart contract transaction executes as an "all-or-nothing" operation. Either all state
+  changes commit to the blockchain, or none do.
+
+  Key Principles
+
+  1. Atomic Execution: Transactions cannot partially succeed
+  2. State Consistency: Blockchain state never becomes partially updated
+  3. Rollback on Failure: Any exception/trigger causes complete rollback
+  4. Gas Consumption: Gas is consumed regardless of success/failure
+
+
+**upgrade contract conflict**
+1. Type 1 – Logic contract overwrites Proxy’s own slots
+(The Akropolis-style bug)
+The proxy stores its critical data (implementation address, admin, etc.) in low slots (0, 1, …).
+If the logic contract declares a state variable in the same slot, delegatecall will overwrite the proxy’s data → contract dies instantly.
+2. Type 2 – New version layout incompatible with old version layout
+Storage on chain never moves. If a variable changes its slot number between V1 → V2, the new code will read the wrong data (classic example: owner() suddenly returns 500 instead of an address).
+
+example one:
+```
+// V1 (already live with real user data)
+contract MyTokenV1 is Initializable, ERC20Upgradeable {
+    uint256 public a;        // slot 0 → 1000
+    uint256 public b;        // slot 1 → 500
+    bool    public paused;   // slot 2 → true
+    address public owner;    // slot 3 → 0x1234…abcd
+}
+
+// V2 (you only wanted to “clean up” the code order)
+contract MyTokenV2 is Initializable, ERC20Upgradeable {
+    uint256 public a;        // slot 0 → still 1000  (correct)
+    address public owner;    // slot 1 → reads old b = 500 !!!  ← broken
+    bool    public paused;   // slot 2 → reads old paused = true (maybe ok)
+    uint256 public b;        // slot 3 → reads old owner address as uint256 !!!  ← broken
+}
+```
+slot was assigned by vairable order, now get owner value, but get previous b value, so it is get conflicted.
+
+example two:
+```
+Storage Slot,Who “owns” this slot in reality?,What is actually stored there?,Which contract wrote it?
+slot 0,Proxy contract,implementation address (or admin),Proxy wrote it
+slot 1,Proxy contract,owner / beacon / etc.,Proxy wrote it
+slot 2,Proxy contract,(usually empty),—
+…,…,…,—
+slot 100,Logic contract (V1),totalSupply,Logic wrote via delegatecall
+slot 101,Logic contract (V1),balances mapping base,Logic wrote via delegatecall
+slot 102,Logic contract (V1),paused (bool),Logic wrote via delegatecall
+```
+proxy contract and logic contract use one single storage. logic contract variable will write to proxy storage using delegatecall.  
+so if you just define variable by order in logic contract, it has great possibility to conflict with variable slot in proxy contract.
+
+
+**solution**
+
+using OpenZeppelin UUPS / Transparent proxy.
+it does't store the variable in normal storage slots 0 ,1, 2, 3. instead, they store it in extremely high, "random-looking" slots
+that was calculated with keccak256. this has very little chance to conflict.
 
 
 
