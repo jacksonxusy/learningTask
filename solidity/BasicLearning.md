@@ -810,8 +810,15 @@ mint()	shares	assets
   3. Rollback on Failure: Any exception/trigger causes complete rollback
   4. Gas Consumption: Gas is consumed regardless of success/failure
 
+**upgrade contract can be implemented via two points**
+1. delegatecall -- logic contract can use proxy contract context, then no need to concern data change each time upggrading logic contract.
+2. fallback function -- when user calls a function that doesn't exist in proxy contract, it will route to fallback method. In fallback method, we 
+can call logict contract to route to real implementation.
+
+
 
 **upgrade contract conflict**
+
 1. Type 1 – Logic contract overwrites Proxy’s own slots
 (The Akropolis-style bug)
 The proxy stores its critical data (implementation address, admin, etc.) in low slots (0, 1, …).
@@ -859,6 +866,38 @@ so if you just define variable by order in logic contract, it has great possibil
 using OpenZeppelin UUPS / Transparent proxy.
 it does't store the variable in normal storage slots 0 ,1, 2, 3. instead, they store it in extremely high, "random-looking" slots
 that was calculated with keccak256. this has very little chance to conflict.
+
+
+**OpenZeppelin initialize function usage**
+```
+function initialize(address initialOwner) public initializer {
+    __Ownable_init(initialOwner);
+}
+```
+Reason we cannot use a normal constructor in the logic contract
+
+- When the logic contract is deployed, its constructor runs immediately.
+- After deployment, nobody ever uses the logic contract address directly → all that data is lost forever.
+- Users only interact with the proxy address.
+- The proxy uses delegatecall → the logic code runs, but storage is read/written in the proxy’s storage.
+- Since the constructor never ran on the proxy, the proxy’s storage is empty → owner = address(0), totalSupply = 0 → everything broken from day one.
+if call logic contract constructor function at deployment, it will write related variable to logic address storage.
+when we call logic contract function in proxy contract, it can't find correct varibale in proxy contract address storage.
+but if you call initialize function in proxy contract, that set set related variable in proxy contract address.
+```
+contract MyToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
+    // NO constructor!!!
+
+    function initialize(string memory name, uint256 initialSupply) public initializer {
+        __ERC20_init(name, "MTK");
+        __Ownable_init(msg.sender);
+        _mint(msg.sender, initialSupply);
+    }
+}
+```
+
+
+
 
 
 
