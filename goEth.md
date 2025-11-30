@@ -1,5 +1,4 @@
-###ERC20 transfer###
-
+### ERC20 transfer
 ```
 	// 6. 构造 transfer(address,uint256) 的 calldata（最稳方式）
 	transferFnSignature := []byte("transfer(address,uint256)")
@@ -60,7 +59,7 @@ LINK 合约存储：
 3. ERC20 token will verify signature to check if this transaction was sent by its public address.
 
 
-###execute contract function using eth client###
+### execute contract function using eth client
 ```
 callOpt := &bind.CallOpts{Context: context.Background()}
 valueInContract, err := storeContract.Items(callOpt, key)
@@ -109,7 +108,7 @@ name, err := token.Name(callOpt)
 ```
 
 
-###contract execution###
+### contract execution
 ## Two Ways to Call Contracts in Go
 
 | Feature                          | Method A — Easy Way (`abigen` + `bind`)                                 | Method B — Hardcore Way (Raw ABI + Manual Tx)                              |
@@ -123,7 +122,7 @@ name, err := token.Name(callOpt)
 | Real-world analogy               | Driving a Tesla (automatic)                                              | Building a Formula 1 car from scratch                                      |
 | Best for                         | Learning, small projects, 1–10 contracts                                 | Production backends, supporting 1000+ tokens, maximum flexibility          |
 
-###two way of signature###
+### two way of signature
 ```
 // Example 1: using bind to call contract methods
 auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, chainID)

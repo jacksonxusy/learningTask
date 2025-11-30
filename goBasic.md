@@ -1,4 +1,5 @@
-###Package concepts###
+
+### Package concepts
 1. all file must use one package in one directory.
 2. if two go file belongs to package main, then it must compile together. `go run *.go` or `go run A.go B.go`
 3. `go mod init <module-name>`  this is to create a go module, which includes go code, plus a go.mod file, plus dependencies managed automatically.  
@@ -16,7 +17,7 @@ myproject/
 
 
 
-###make and chan keywords###
+### make and chan keywords
 make was only used to initiate three in-built referrence type:  
 1. slice `slice := make([]int, length, capacity)`
 2. map `m := make(map[string]int, 20)`
@@ -63,7 +64,7 @@ whichever channel receives a value first is executed.
 3. good for queue-lick behavior.  
 
 
-###Basic knowleadges###
+### Basic knowleadges
 1. in Go, the backtick symbol ` … ` does represent a string, but a special kind called a raw string literal.
 used for JSON, SQL, Regex.
 2. := (short variable declaration) requires at least one new variable must be declared on the left side.
