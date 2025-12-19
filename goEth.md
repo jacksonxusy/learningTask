@@ -141,8 +141,132 @@ handles ABI encoding, nonce/gas helpers).
 2. Use types.SignTx when you need low level control or are sending raw transactions(not using generated bindings)
 
 
+### token governance system
+key state variables:
+```
+
+// mapping[0xAlic]= 0xBob, alice delegated her votes to bob.
+mapping(address => address) public delegates;
+
+// record numbers of user checkpoints history snapshot
+mapping(address => uint32) public numCheckpoints;
+
+// checkpoints[someAddress][0], [1], [2] record user specific time and its checkpoint snapshot
+mapping(address => mapping(uint32 => Checkpoint)) public checkpoints;
+
+struct Checkpoint {
+    uint32 blockNumber;   // At which block did this happen?
+    uint224 votes;        // How many votes did he have from this block onward?
+}
+```
+key functions:  
+```
+function _delegate(address delegator, address delegatee) private {
+    address currentDelegate = delegates[delegator];
+    uint256 delegatorBalance = _balances[delegator];
+    delegates[delegator] = delegatee;
+
+    emit DelegateChanged(delegator, currentDelegate, delegatee);
+
+    _moveDelegates(currentDelegate, delegatee, uint224(delegatorBalance));
+}
+
+function _moveDelegates(
+    address from,    // old delegate (losing votes)
+    address to,      // new delegate (gaining votes)
+    uint224 amount   // how many votes are moving
+) private {
+    if (from == to) return;          // nothing to do
+    if (amount == 0) return;         // nothing to do
+
+    // ── Decrease votes from the OLD delegate ─────────────────────
+    if (from != address(0)) {
+        uint32 fromRepNum = numCheckpoints[from]; // number of checkpoints already written
+        uint224 fromRepOld = fromRepNum > 0 
+            ? checkpoints[from][fromRepNum - 1].votes 
+            : 0;  // get the last snapshot checkpoint votes
+        uint224 fromRepNew = fromRepOld - amount; // produce the new votes according to last one.
+
+        _writeCheckpoint(from, fromRepNum, fromRepOld, fromRepNew);
+    }
+
+    // ── Increase votes for the NEW delegate ──────────────────────
+    if (to != address(0)) {
+        uint32 toRepNum = numCheckpoints[to];
+        uint224 toRepOld = toRepNum > 0 
+            ? checkpoints[to][toRepNum - 1].votes 
+            : 0;
+        uint224 toRepNew = toRepOld + amount;
+
+        _writeCheckpoint(to, toRepNum, toRepOld, toRepNew);
+    }
+}
+```
+**note: when token move(transfer,tax,burn, etc). this function moves the voting power from the old delegate to new delegate**
+transfer flow:  
+```
+Alice (delegated to Vitalik) 
+    → transfers 1M FLOKI to → 
+Bob   (delegated to CZ)
+
+→ _transfer() calls:
+  _moveDelegates(
+      from = Vitalik's address,
+      to   = CZ's address,
+      amount = 1_000_000 * 1e9   // with decimals
+  )
+
+→ Vitalik’s latest checkpoint: votes -= 1M
+→ CZ’s latest checkpoint:       votes += 1M
+→ Events emitted: DelegateVotesChanged for both
+```
+write a new checkpoint:  
+```
+ function _writeCheckpoint(
+        address delegatee,
+        uint32 nCheckpoints,
+        uint224 oldVotes,
+        uint224 newVotes
+    ) private {
+        uint32 blockNumber = uint32(block.number); // get current blocknum. 
+
+        if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].blockNumber == blockNumber) {
+        	// if same with last block, just update votes.
+            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
+        } else {
+        	// produce a new checkpoint.
+            checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
+            // incre checkpoint num.
+            numCheckpoints[delegatee] = nCheckpoints + 1;
+        }
+
+        emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
+    }
+```
+**why need take a snapshot in the past**
+when the community propose a proposal, if getting the latest votes, attacker can buy most of its token and get related votes, then 
+he can votes "NO" with 60%, -- proposal fails.  
+the is called last minute attack or flash loan governance attack, so using the latest votes would be cheating and completely unfair.
+
+**Floki tax system:**  
+How it works: Every time someone buys or sells FLOKI on a DEX (like Uniswap or PancakeSwap), a tiny 0.3% tax is automatically deducted.
+Example: You buy $100 worth of FLOKI → you pay $100.30 ($0.30 tax goes to treasury).  
+What gets taxed? Only buys and sells (not wallet-to-wallet transfers).  
+Who pays? The buyer/seller — it's baked into the token code.  
+Why tax? Funds the "Floki ecosystem" (games, DeFi, NFTs). Goal: Make enough revenue from products (like Valhalla game) to eventually remove the tax entirely.  
 
 
+**What is the Treasury System? (The "Savings Jar")**
+
+How it works: The tax money (0.3% of every trade) goes straight to the Floki treasury — a multi-signature wallet (needs 3+ team members to approve spends).
+What's in it? Mostly FLOKI tokens, ETH/BNB, and stablecoins (USDC). As of late 2025, it's valued at ~$10–20M (fluctuates with market).
+What do they spend it on?
+Marketing: Ads, listings on exchanges (e.g., $10M deal with DWF Labs in 2024).
+Development: Building Valhalla (NFT game), FlokiFi Locker (DeFi tool), trading bots.
+Buybacks/Burns: 25% of FlokiFi fees auto-buy and burn FLOKI (reduces supply).
+Charity/Community: Donations, airdrops (e.g., massive burn proposal in Feb 2024).
+
+Transparency: Treasury addresses are public (e.g., on Etherscan), and multisig requires 3 signatures for withdrawaw.
 
 
 
