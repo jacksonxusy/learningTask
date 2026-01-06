@@ -442,8 +442,6 @@ nextTick = tickBitmap.nextInitializedTick(currentTick);
 
 During sandwiching, attackers wrap your swap transactions in their two transactions: one goes before your transaction and other goes after it. In the first transaction, an attacker modifies the state of a pool so that your swap becomes very unprofitable for you and somewhat profiable for the attacker. This is achieved by adjusting pool liquidity so that your trade happens at a lower price. In the second transaction, the attacker reestablish pool liquidity and the price. As a result, you get much fewer tokens than expected due to manipulated prices, and the attacker gets some profit.
 
-
-
 ```solidity
 function swap(
     address recipient,

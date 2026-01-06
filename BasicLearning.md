@@ -1,99 +1,108 @@
 # Solidity Basic Learning Outline
 
-
 ## 2. Basic Syntax
+
 ### 2.1 Contract Structure
+
 - pragma declaration
 - contract keyword
 - Basic contract template
 
 ### 2.2 Data Types
+
 - Value Types: uint, int, bool, address, bytes
 - Reference Types: arrays, structs, mappings
 - Special Types: string, bytes, enum
-In solidity, if a variable doesn't have a specified type.its type is inferred from the context, 
-defaulting to the smallest unit type, which is uint8 by default. In [uint(1),2,3], 
-all elements are of uint type because the first element is explicitly specified as uint type, 
-and the type of each element in the array follows the type of the first element.
-
+  In solidity, if a variable doesn't have a specified type.its type is inferred from the context, 
+  defaulting to the smallest unit type, which is uint8 by default. In [uint(1),2,3], 
+  all elements are of uint type because the first element is explicitly specified as uint type, 
+  and the type of each element in the array follows the type of the first element.
 
 ### 2.3 Variable Declarations
+
 Data location keywords (memory, storage, calldata) are only needed for function parameters and
 local variables, NOT for global/state variables.
 State Variables:
+
 - Always stored in storage by default
 - Storage location is implicit since they're part of the contract's permanent state
 - No need to specify what's already determined
 
 ⏺ Data Location Summary
 
-  1. Storage
+1. Storage
+- Purpose: Permanent contract state
 
-  - Purpose: Permanent contract state
-  - Usage: Global variables, structs, arrays
-  - Lifetime: Exists forever until contract is destroyed
+- Usage: Global variables, structs, arrays
 
+- Lifetime: Exists forever until contract is destroyed
+  
   contract Example {
-      uint256[] public myArray;      // storage - global variable
-
-      function add(uint256 value) external {
-          myArray.push(value);       // storage - modifying global
-      }
-
-      function getArray() external view returns(uint256[] storage) {
-          return myArray;            // storage reference
-      }
+    uint256[] public myArray;      // storage - global variable
+  
+    function add(uint256 value) external {
+  
+        myArray.push(value);       // storage - modifying global
+  
+    }
+  
+    function getArray() external view returns(uint256[] storage) {
+  
+        return myArray;            // storage reference
+  
+    }
   }
+2. Memory
+- Purpose: Temporary data during function execution
 
-  2. Memory
+- Usage: Function parameters, local variables, return values
 
-  - Purpose: Temporary data during function execution
-  - Usage: Function parameters, local variables, return values
-  - Lifetime: Only exists during function execution
-
+- Lifetime: Only exists during function execution
+  
   function process(uint256[] memory data) external {
-      // memory parameter
-      uint256[] memory temp = new uint256[](10);  // memory local variable
-      temp[0] = data[0];
+    // memory parameter
+    uint256[] memory temp = new uint256[](10);  // memory local variable
+    temp[0] = data[0];
   }
-
+  
   function getString() external pure returns(string memory) {
-      return "temporary string";    // memory return value
+    return "temporary string";    // memory return value
   }
+3. Calldata
+- Purpose: Read-only input for external functions
 
-  3. Calldata
+- Usage: External function parameters only
 
-  - Purpose: Read-only input for external functions
-  - Usage: External function parameters only
-  - Lifetime: Only during function execution
-  - Cannot be modified
+- Lifetime: Only during function execution
 
+- Cannot be modified
+  
   function externalFunction(uint256[] calldata input) external pure {
-      // calldata parameter - read only
-      // input[0] = 123;  // ❌ Cannot modify calldata
-      uint256 first = input[0];  // ✅ Can read
+    // calldata parameter - read only
+    // input[0] = 123;  // ❌ Cannot modify calldata
+    uint256 first = input[0];  // ✅ Can read
   }
-
+  
   Quick Rules:
-
+  
   | Data Location | Use For                  | Can Modify? | Lifetime      |
-  |---------------|--------------------------|-------------|---------------|
+  | ------------- | ------------------------ | ----------- | ------------- |
   | Storage       | Global variables         | ✅ Yes       | Permanent     |
   | Memory        | Local variables, returns | ✅ Yes       | Function only |
   | Calldata      | External parameters      | ❌ No        | Function only |
-
+  
   Key: Storage = permanent, Memory = temporary, Calldata = read-only temporary
-
-    Quick Rules:
-
+  
+  Quick Rules:
+  
   | When to Use                 | Memory | Calldata    |
-  |-----------------------------|--------|-------------|
+  | --------------------------- | ------ | ----------- |
   | External function parameter | ✅      | ✅ (cheaper) |
   | Internal function parameter | ✅      | ❌           |
   | Local variable              | ✅      | ❌           |
   | Need to modify data         | ✅      | ❌           |
   | Read-only, cheapest         | ❌      | ✅           |
-
+  
   Bottom line: Use calldata for external parameters when you don't need to modify the data. Use memory when you need to modify or for 
   internal functions.
 
@@ -101,16 +110,16 @@ State Variables:
 
    Types Summary:
 
-  | Type     | Category  | Needs Location?                 |
-  |----------|-----------|---------------------------------|
-  | address  | Value     | ❌ No                            |
-  | uint256  | Value     | ❌ No                            |
-  | bool     | Value     | ❌ No                            |
-  | string   | Reference | ✅ Yes (memory/storage/calldata) |
-  | bytes    | Reference | ✅ Yes                           |
-  | arrays   | Reference | ✅ Yes                           |
-  | structs  | Reference | ✅ Yes                           |
-  | mappings | Reference | ✅ Yes (storage only)            |
+| Type     | Category  | Needs Location?                 |
+| -------- | --------- | ------------------------------- |
+| address  | Value     | ❌ No                            |
+| uint256  | Value     | ❌ No                            |
+| bool     | Value     | ❌ No                            |
+| string   | Reference | ✅ Yes (memory/storage/calldata) |
+| bytes    | Reference | ✅ Yes                           |
+| arrays   | Reference | ✅ Yes                           |
+| structs  | Reference | ✅ Yes                           |
+| mappings | Reference | ✅ Yes (storage only)            |
 
   Rule: Only reference types (string, bytes, arrays, structs, mappings) need location specifiers. Value types (address, uint, 
   bool) don't.
@@ -118,34 +127,43 @@ State Variables:
 **note:** In Solidity, state variables cannot have the external visibility specifier.
 
 Function Context:
+
 - Need to explicitly tell Solidity where to put data for efficiency
 - Different locations have different gas costs and use cases
 - Compiler needs to know how to handle the data
 
 Rule of thumb:
+
 - Global variables = automatically storage
 - Function variables = must specify memory, storage, or calldata
 
 ## 3. Functions
+
 ### 3.1 Function Definition
+
 - Function declaration syntax
 - Parameters and return values
 - Function visibility: public, private, internal, external
 
 ### 3.2 Function Modifiers
+
 - view functions
 - pure functions
 - payable functions
 
 ### 3.3 Built-in Functions
-- keccak256, sha256
-- require, assert, revert
-- this, msg, block, tx
-```solidity
-require(_owners[tokenId] == address(0), "token already minted");
-```
-If condition is true, then go ahead. If no, then revert with error message.
 
+- keccak256, sha256
+
+- require, assert, revert
+
+- this, msg, block, tx
+  
+  ```solidity
+  require(_owners[tokenId] == address(0), "token already minted");
+  ```
+  
+  If condition is true, then go ahead. If no, then revert with error message.
 
 **key difference between call and delegate call**
 
@@ -166,6 +184,7 @@ msg.sender = A. msg.value = A;
 eg: in this code sninppet, `tokenOut.transfer(msg.sender, amountOut);`. 
 its underlying code msg.sender === this contract  address, not wallet address, becuase this 
 contract called him.
+
 ```
 function swap(uint amountIn, IERC20 tokenIn, uint amountOutMin) external returns (uint amountOut, IERC20 tokenOut){
     require(amountIn > 0, 'INSUFFICIENT_OUTPUT_AMOUNT');
@@ -184,13 +203,16 @@ function swap(uint amountIn, IERC20 tokenIn, uint amountOutMin) external returns
         tokenIn.transferFrom(msg.sender, address(this), amountIn);
         tokenOut.transfer(msg.sender, amountOut);
 ```
+
 ** ERC20 when to use transfer function or transferFrom function **
 it depends your current entity wants to do what action.
+
 - if you wants to take token from others, use transferFrom.
 - if you wants to transfer your token to others, use transfer.  
-in above code swap function, current contract wants to token from user, and transfer tokenOut to user.
+  in above code swap function, current contract wants to token from user, and transfer tokenOut to user.
 
 ** difference between internal call and external call **
+
 ```
   function secretSlector() public   pure returns(bytes4){
       return bytes4(keccak256("putCurEpochConPubKeyBytes(bytes)"));
@@ -203,27 +225,32 @@ in above code swap function, current contract wants to token from user, and tran
   } 
 ```
 
-
-
 ## 5. Object-Oriented Programming
+
 ### 5.1 Inheritance
+
 - is keyword
 - Constructors
 - super keyword
 
 ### 5.2 Interfaces
+
 - interface definition
 - interface implementation
 
 ### abi.encode
+
 abi was designed to interact with smart contract, it pad into 32 bytes with each parameters, and concat together, if you 
 want to interact with contract, you need use abi.encode.
+
 ```
 function encode() public view returns(bytes memory result) {
     result = abi.encode(x, addr, name, array);
 }
 ```
+
 the results is:
+
 ```
 000000000000000000000000000000000000000000000000000000000000000a    // x
 0000000000000000000000007a58c0be72be218b41c608b7fe7c5bb630736c71    // addr
@@ -233,17 +260,22 @@ the results is:
 0000000000000000000000000000000000000000000000000000000000000004    // name 参数的长度为4字节
 3078414100000000000000000000000000000000000000000000000000000000    // name
 ```
+
 **abi.encodePacked**
 it will encode data according to minimum space that it need, similar to abi.encode, but it will ignore many zero, still above
 encode() function, the result is:
+
 ```
 0x000000000000000000000000000000000000000000000000000000000000000a7a58c0be72be218b41c608b7fe7c5bb630736c713078414100000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000006
 ```
+
 because it will not pad into zero, different input may have the same encode result after concating, leading to collision.
 `abi.encodePacked("ab", "c") == abi.encodePacked("a", "bc")`. 
 
 ### why we need hash fields inside abi.encode?
+
 EIP-712 encode:
+
 ```
 bytes32 domainSeparator = keccak256(
     abi.encode(
@@ -254,21 +286,22 @@ bytes32 domainSeparator = keccak256(
     )
 );
 ```
+
 1. inner `keccak256(bytes(name()))` converts a dynamic-length string into fixed-length, so it can safely be encoded in the domain struct.
 2. outer `keccak256(abi.encode(...))` hash the entire encoded struct into a single bytes32. becuase eth wallet can't sign the 
-structs directly, they can only sign a 32 bytes hash.
+   structs directly, they can only sign a 32 bytes hash.
 - abi.encode(string) works fine
 - problem arise only if need fixed-32bytes representation for: EIP-712 / mapping keys
 - in that case keccak256(bytes(string)) is required.
 
-| Method                          | Total encoded bytes (approx) | Notes                     |
-| ------------------------------- | ---------------------------- | ------------------------- |
-| `abi.encode(string)`            | 32 + 32 + padded length      | Grows with string size    |
-| `abi.encode(keccak256(string))` | 32                           | Always fixed, saves space |
-**Hashing saves storage and gas when you need a fixed-size representation**
-
+| Method                                                                      | Total encoded bytes (approx) | Notes                     |
+| --------------------------------------------------------------------------- | ---------------------------- | ------------------------- |
+| `abi.encode(string)`                                                        | 32 + 32 + padded length      | Grows with string size    |
+| `abi.encode(keccak256(string))`                                             | 32                           | Always fixed, saves space |
+| **Hashing saves storage and gas when you need a fixed-size representation** |                              |                           |
 
 ## 7. Error Handling
+
 - require statements
 - assert statements
 - revert statements
@@ -279,19 +312,24 @@ only disable automatic overflow/underflow checks for arithmetic operations.
 not for division by zero errors/ out of bonds array access error.
 
 normal case:
+
 ```
 uint8 x = 255;
 x = x + 1;  // ❌ will revert (overflow)
 ```
+
 but if you add unchecked, no overflow/underflow error more.
+
 ```
 unchecked {
     x = x + 1;   // ✔ no revert, wraps to 0
 }
 ```
+
 why use it?
+
 1. gas optimization, if you are sure the range is safe or overflow behavior is intentional, you can
-remove it to save gas.
+   remove it to save gas.
 
 example in ERC20:
 
@@ -308,10 +346,10 @@ function _spendAllowance(address owner, address spender, uint256 amount) interna
 }
 ```
 
-
 **revert Example comparison**
 
 Solidity:
+
 ```solidity
 function divide(uint256 a, uint256 b) public pure returns (uint256) {
     if (b == 0) {
@@ -320,6 +358,7 @@ function divide(uint256 a, uint256 b) public pure returns (uint256) {
     return a / b;
 }
 ```
+
 Java:
 
 ```java
@@ -334,21 +373,24 @@ int divide(int a, int b) {
 Same logic — the main difference is Solidity’s revert undoes all state changes and costs gas, while Java’s throw just stops execution.
 
 ## 8. Common Patterns
+
 ### 8.1 Security Patterns
+
 - Checks-Effects-Interactions pattern
 - Reentrancy protection
 - Integer overflow protection
 
-
 ### 9.2 Ether Transfers
+
 - transfer method
 - send method
 - call method
 
 ### 9.3 Calling Other Contracts
+
 - Contract instantiation
 - Low-level calls
-withdraw function.
+  withdraw function.
   Without Data (Simple ETH Transfer):
 
 ```solidity
@@ -407,7 +449,6 @@ contract SafeCaller {
 1. receive ETH
 2. handle function call not existed in contract. (**especially in proxy**)
 
-
 **using X for Y**
 | Statement                     | Meaning                                  | Example                          |
 | ----------------------------- | ---------------------------------------- | -------------------------------- |
@@ -415,9 +456,8 @@ contract SafeCaller {
 | `using Address for address;`  | Attach Address helpers to address type   | `addr.isContract()`              |
 | `using Math for uint256;`     | Attach Math helpers to uint256 values    | `value.mulDiv(x,y)`              |
 
-
-
 ## 10. Gas Optimization
+
 - Gas concept
 - Optimization techniques
 - Gas limits
@@ -428,17 +468,22 @@ hash. wallet produce signature via its private key and transction hash. then con
 cheking if it equals to public key of expected address, if pass, then execute transation. 
 
 ### 14.3 Multi-Signature Wallets
+
 - Multi-sig contract principles
 - Permission management
 
 ## 15. Practical Projects
-### 15.1 Simple Projects
-- Storage contract
-- Voting contract
-- Token contract (ERC20)
-ERC20 approval and transferFrom process. 
-The Approval Process:
 
+### 15.1 Simple Projects
+
+- Storage contract
+
+- Voting contract
+
+- Token contract (ERC20)
+  ERC20 approval and transferFrom process. 
+  The Approval Process:
+  
   Step 1: User First Approves the Airdrop Contract
 
 ```solidity
@@ -477,6 +522,7 @@ airdropContract.multiTransferToken(
   // balanceOf[recipient] += amount;
 
   The Allowance Mapping Structure:
+
 ```solidity
 mapping(address => mapping(address => uint256)) public allowance;
 //                 ↑         ↑             ↑
@@ -507,22 +553,25 @@ User (0x123)                Airdrop Contract (0x456)            Token Contract
 
   Security:
 
-  - User never loses control of tokens
-  - Can revoke approval anytime
-  - Limit the amount each contract can spend
+- User never loses control of tokens
 
+- Can revoke approval anytime
+
+- Limit the amount each contract can spend
+  
   Flexibility:
 
-  - One approval = multiple transfers
-  - Can approve different amounts for different contracts
+- One approval = multiple transfers
 
+- Can approve different amounts for different contracts
+  
   Example Usage:
-
+  
   // User approves multiple contracts:
   token.approve(uniswap, 1000);    // Uniswap can spend 1000
   token.approve(airdrop, 500);     // Airdrop can spend 500
   token.approve(lending, 200);     // Lending can spend 200
-
+  
   // Each contract checks its own allowance:
   require(allowance[user][msg.sender] >= amount, "Not approved!");
 
@@ -530,12 +579,12 @@ ERC721
 approve and setApproval difference:
   Key Differences:
 
-  | Feature     | approve()                   | setApprovalForAll()      |
-  |-------------|-----------------------------|--------------------------|
-  | Scope       | One token                   | All tokens               |
-  | Storage     | mapping(uint256 => address) | mapping(address => mapping(address => bool)) private _operatorApprovals; |
-  | Gas         | Lower per approval          | Higher (sets for all)    |
-  | Flexibility | Granular control            | Convenient bulk control  |
+| Feature     | approve()                   | setApprovalForAll()                                                      |
+| ----------- | --------------------------- | ------------------------------------------------------------------------ |
+| Scope       | One token                   | All tokens                                                               |
+| Storage     | mapping(uint256 => address) | mapping(address => mapping(address => bool)) private _operatorApprovals; |
+| Gas         | Lower per approval          | Higher (sets for all)                                                    |
+| Flexibility | Granular control            | Convenient bulk control                                                  |
 
 - approve is only for one address, if you call it again, the first approval address will lose approval.
 - setApprovalForAll allows an NFT owner to grant permission to another address to manage ALL of their NFTs from a specific collection.
@@ -644,12 +693,11 @@ approve and setApproval difference:
           emit Sold(tokenId, msg.sender);
       }
   }
-
-
 ```
 
 **ERC721 transfer function**.
 in ERC721 function, it has an approve function.
+
 ```solidity
 function _transfer(address owner, address from, address to, uint256 tokenId) private {
     require(from == owner, "not owner");
@@ -657,13 +705,16 @@ function _transfer(address owner, address from, address to, uint256 tokenId) pri
     _approve(owner, address(0), tokenId);
 }
 ```
+
 _approve(owner, address(0), tokenId); this is to set tokenId's approval to address(0), clearing the approval when token is transferred.
   Why this is necessary:
-  1. Security: When you transfer a token, any existing approvals should be canceled
-  2. Prevent double-spending: The old owner shouldn't be able to transfer it again after selling
-  3. State consistency: The new owner starts with a "clean slate" - no approvals exist
+
+1. Security: When you transfer a token, any existing approvals should be canceled
+2. Prevent double-spending: The old owner shouldn't be able to transfer it again after selling
+3. State consistency: The new owner starts with a "clean slate" - no approvals exist
 
 **ERC721 transfer checkReceive function.**
+
 ```solidity
 function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory data) private {
     if (to.code.length > 0) {
@@ -684,25 +735,27 @@ function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes
     }
 }
 ```
+
 breaking down:
+
 1. check if recipient is a contract:
- if (to.code.length > 0) {  // to.code.length > 0 = is contract
+   if (to.code.length > 0) {  // to.code.length > 0 = is contract
       // If code length > 0, it's a contract address
       // If code length == 0, it's an EOA (normal wallet)
-  }
+   }
 2. call the contract's receiver function:
-it ensure the receiver implement IERC721Receiver menthod and returned function Signature magic number.
-otherwise, it will thorw an error.
-it just check if the contract claims to support ERC721, not verify if the contract handles NFT correctly.
-
-
+   it ensure the receiver implement IERC721Receiver menthod and returned function Signature magic number.
+   otherwise, it will thorw an error.
+   it just check if the contract claims to support ERC721, not verify if the contract handles NFT correctly.
 
 ### 15.2 Intermediate Projects
+
 - NFT contract (ERC721)
 - Decentralized exchange
 - Lending protocol
 
 **ERC4626 break down**
+
 ```
 function deposit(uint256 assets, address receiver) public virtual returns (uint256 shares) {
 
@@ -715,17 +768,20 @@ function deposit(uint256 assets, address receiver) public virtual returns (uint2
     emit Deposit(msg.sender, receiver, assets, shares);
 }
 ```
+
 1. calculates how many vault shares the user will receive.
+
 2. user's asset transferred to valut contract.
+
 3. valut creates new shares for the receiver.
- Correct Order:
-
-  1. Calculate ✅ (Check)
-  2. Transfer assets ✅ (Interaction 1)
-  3. Mint shares ✅ (Effect)
-  4. Emit event ✅ (Logging)
-
-  Why This Order Matters:
+   Correct Order:
+   
+   1. Calculate ✅ (Check)
+   2. Transfer assets ✅ (Interaction 1)
+   3. Mint shares ✅ (Effect)
+   4. Emit event ✅ (Logging)
+   
+   Why This Order Matters:
 
 ```
   // VULNERABLE (if order was wrong):
@@ -736,6 +792,7 @@ function deposit(uint256 assets, address receiver) public virtual returns (uint2
   // - Call deposit again before first deposit completes
   // - Get extra shares for same assets
 ```
+
 deployed two contract(ERC20 and ERC4626), and execute the following actions.  
 
 1. ERC20 contract, mint 10000 tokens. and approve ERC4626 contract address and 10000 token.
@@ -745,6 +802,7 @@ balanceOf and totoalSupply amount change like below:
 
 Before Deposit:
 // ERC20 contract:
+
 ```
 tokenA.balanceOf(myWallet) = 10000.
 totoalSupply = 10000.
@@ -753,28 +811,33 @@ totoalSupply = 10000.
 After 1000 Token A Deposit:  
 `_asset.transferFrom(msg.sender, address(this), assets);` 
 this transfer 1000 token to contract B. then it changed to this:  
+
 ```
 // ERC20 contract:
 tokenA.balanceOf(myWallet) = 9000.
 tokenA.balanceOf(valut contract) = 1000.
 totoalSupply = 10000.
 ```
+
 then called ` _mint(receiver, shares);` it changed to this:
+
 ```
 // ERC4626 contract:
 tokenB.balanceOf(myWallet) = 1000.
 totoalSupply = 1000;
 ```
-**note: token flow work between the two contracts**
-1. checker who is caller.  
-`_asset.transferFrom(msg.sender, address(this), assets);` this caller is _asset.  
-`_mint(receiver, shares);` this caller is current contract.
-2. using current caller's state variable to calculate.  
-`_asset.transferFrom(msg.sender, address(this), assets);` this use _asset balance mapping to calculate.  
-`_mint(receiver, shares);` this use current contract balance mapping to calcalate.
 
+**note: token flow work between the two contracts**
+
+1. checker who is caller.  
+   `_asset.transferFrom(msg.sender, address(this), assets);` this caller is _asset.  
+   `_mint(receiver, shares);` this caller is current contract.
+2. using current caller's state variable to calculate.  
+   `_asset.transferFrom(msg.sender, address(this), assets);` this use _asset balance mapping to calculate.  
+   `_mint(receiver, shares);` this use current contract balance mapping to calcalate.
 
 **Dex getAmounOut break down**
+
 ```
 function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) public pure returns(uint amountOut) {
     require (amountIn > 0, "insufficient input");
@@ -782,11 +845,13 @@ function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) public pur
     amountOut = amountIn * reserveOut / (reserveIn + amountIn);
 }
 ```
+
   Core Formula:
 
   amountOut = amountIn * reserveOut / (reserveIn + amountIn)
 
   AMM Pool Mechanics:
+
 ```
   // Before swap:
   reserveIn = 1000   // Pool has 1000 input tokens
@@ -804,6 +869,7 @@ function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) public pur
   // newReserveOut = (1000 * 2000) / 1100 = 1818
   // amountOut = 2000 - 1818 = 182
 ```
+
 They're actually the same mathematically:
 
 // Full formula:
@@ -813,10 +879,9 @@ They're actually the same mathematically:
 `amountOut = amountIn * reserveOut / (reserveIn + amountIn)`
 
 ** funciton Purpose difference between mint and deposit **. 
-Action	User Chooses	Vault Calculates
-deposit()	assets	shares
-mint()	shares	assets
-
+Action    User Chooses    Vault Calculates
+deposit()    assets    shares
+mint()    shares    assets
 
 ⏺ **EVM Atomicity Summary**
 
@@ -827,28 +892,28 @@ mint()	shares	assets
 
   Key Principles
 
-  1. Atomic Execution: Transactions cannot partially succeed
-  2. State Consistency: Blockchain state never becomes partially updated
-  3. Rollback on Failure: Any exception/trigger causes complete rollback
-  4. Gas Consumption: Gas is consumed regardless of success/failure
+1. Atomic Execution: Transactions cannot partially succeed
+2. State Consistency: Blockchain state never becomes partially updated
+3. Rollback on Failure: Any exception/trigger causes complete rollback
+4. Gas Consumption: Gas is consumed regardless of success/failure
 
 **upgrade contract can be implemented via two points**
+
 1. delegatecall -- logic contract can use proxy contract context, then no need to concern data change each time upggrading logic contract.
 2. fallback function -- when user calls a function that doesn't exist in proxy contract, it will route to fallback method. In fallback method, we 
-can call logict contract to route to real implementation.
-
-
+   can call logict contract to route to real implementation.
 
 **upgrade contract conflict**
 
 1. Type 1 – Logic contract overwrites Proxy’s own slots
-(The Akropolis-style bug)
-The proxy stores its critical data (implementation address, admin, etc.) in low slots (0, 1, …).
-If the logic contract declares a state variable in the same slot, delegatecall will overwrite the proxy’s data → contract dies instantly.
+   (The Akropolis-style bug)
+   The proxy stores its critical data (implementation address, admin, etc.) in low slots (0, 1, …).
+   If the logic contract declares a state variable in the same slot, delegatecall will overwrite the proxy’s data → contract dies instantly.
 2. Type 2 – New version layout incompatible with old version layout
-Storage on chain never moves. If a variable changes its slot number between V1 → V2, the new code will read the wrong data (classic example: owner() suddenly returns 500 instead of an address).
+   Storage on chain never moves. If a variable changes its slot number between V1 → V2, the new code will read the wrong data (classic example: owner() suddenly returns 500 instead of an address).
 
 example one:
+
 ```
 // V1 (already live with real user data)
 contract MyTokenV1 is Initializable, ERC20Upgradeable {
@@ -866,9 +931,11 @@ contract MyTokenV2 is Initializable, ERC20Upgradeable {
     uint256 public b;        // slot 3 → reads old owner address as uint256 !!!  ← broken
 }
 ```
+
 slot was assigned by vairable order, now get owner value, but get previous b value, so it is get conflicted.
 
 example two:
+
 ```
 Storage Slot,Who “owns” this slot in reality?,What is actually stored there?,Which contract wrote it?
 slot 0,Proxy contract,implementation address (or admin),Proxy wrote it
@@ -879,9 +946,9 @@ slot 100,Logic contract (V1),totalSupply,Logic wrote via delegatecall
 slot 101,Logic contract (V1),balances mapping base,Logic wrote via delegatecall
 slot 102,Logic contract (V1),paused (bool),Logic wrote via delegatecall
 ```
+
 proxy contract and logic contract use one single storage. logic contract variable will write to proxy storage using delegatecall.  
 so if you just define variable by order in logic contract, it has great possibility to conflict with variable slot in proxy contract.
-
 
 **solution**
 
@@ -889,30 +956,33 @@ using OpenZeppelin UUPS / Transparent proxy.
 it does't store the variable in normal storage slots 0 ,1, 2, 3. instead, they store it in extremely high, "random-looking" slots
 that was calculated with keccak256. this has very little chance to conflict.
 
-
 **OpenZeppelin initialize function usage**
+
 ```
 function initialize(address initialOwner) public initializer {
     __Ownable_init(initialOwner);
 }
 ```
+
 Reason we cannot use a normal constructor in the logic contract
 
 - When the logic contract is deployed, its constructor runs immediately.
-- After deployment, nobody ever uses the logic contract address directly → all that data is lost forever.
-- Users only interact with the proxy address.
-- The proxy uses delegatecall → the logic code runs, but storage is read/written in the proxy’s storage.
-- Since the constructor never ran on the proxy, the proxy’s storage is empty → owner = address(0), totalSupply = 0 → everything broken from day one.
-if call logic contract constructor function at deployment, it will write related variable to logic address storage.
-when we call logic contract function in proxy contract, it can't find correct varibale in proxy contract address storage.
-but if you call initialize function in proxy contract, that set set related variable in proxy contract address.
 
+- After deployment, nobody ever uses the logic contract address directly → all that data is lost forever.
+
+- Users only interact with the proxy address.
+
+- The proxy uses delegatecall → the logic code runs, but storage is read/written in the proxy’s storage.
+
+- Since the constructor never ran on the proxy, the proxy’s storage is empty → owner = address(0), totalSupply = 0 → everything broken from day one.
+  if call logic contract constructor function at deployment, it will write related variable to logic address storage.
+  when we call logic contract function in proxy contract, it can't find correct varibale in proxy contract address storage.
+  but if you call initialize function in proxy contract, that set set related variable in proxy contract address.
 1. __AccessControl_init() is empty because AccessControl has no constructor logic to replace.
-It still exists to keep initializer ordering consistent during multiple inheritance.
+   It still exists to keep initializer ordering consistent during multiple inheritance.
 
 2 . __UUPSUpgradeable_init() is empty because UUPS has no constructor state that needs initialization.
 The real logic is inside the inherited upgrade functions, not in the initializer.
-
 
 ```
 contract MyToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
@@ -927,6 +997,7 @@ contract MyToken is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 ```
 
 **Openzepplin UUPS and transparent proxy**
+
 ```
 你只写了两个合约：
 ┌─────────────────┐          ┌─────────────────┐
@@ -956,8 +1027,4 @@ function _authorizeUpgrade(address newImplementation)
     // 故意什么都不写！升级逻辑由 OpenZeppelin 插件完成
     // 你只负责回答一个问题：“谁允许升级？” → onlyOwner
 }
-
-
 ```
-
-

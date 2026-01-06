@@ -192,6 +192,46 @@ function _matchOrder(
         );
 ```
 
+Two Types of Buy Orders
+Type 1: Temporary Buy Order (Market Buy)
+``` solidity
+// Bob sees Alice's listing and wants to buy NOW
+// Bob calls matchOrders() directly, creating a temporary order on-the-fly
+
+matchOrders([{
+    sellOrder: aliceListing,
+    buyOrder: {                    // ← Created just for this call
+        side: Bid,
+        maker: Bob,
+        price: 0.5 ETH,
+        ...
+    }
+}], { value: 0.5 ETH })  // ← ETH sent with transaction
+```
+Type 2: Existing Bid Order (Pre-funded)
+
+```solidity
+// Step 1: Bob creates a bid using makeOrders()
+makeOrders([{
+    side: Bid,              // ← Bid = buying
+    maker: Bob,
+    nft: {collection: CoolCats, tokenId: 42, amount: 1},
+    price: 0.5 ETH,
+    expiry: ...,
+    salt: 123
+}], { value: 0.5 ETH })  // ← ETH escrowed in Vault
+
+// Order now stored on-chain, ETH locked in Vault
+// Bob is saying: "I offer 0.5 ETH for CoolCat #42, standing offer"
+
+// Step 2: Later, Alice accepts Bob's bid
+matchOrders([{
+    sellOrder: aliceSellOrder,   // Alice's temporary sell order
+    buyOrder: bobExistingBid     // Bob's existing bid (already on-chain)
+}])
+// No ETH needed from Alice - it's already in Vault from Bob's bid
+```
+
 ---
 
 ### Step 4: Asset Transfers
