@@ -147,7 +147,6 @@ func (s *AuthService) ValidateToken(tokenString string) (*source.User, error) {
 			Username: username,
 		}, nil
 	}
-
 	return nil, errors.ErrInvalidToken
 }
 

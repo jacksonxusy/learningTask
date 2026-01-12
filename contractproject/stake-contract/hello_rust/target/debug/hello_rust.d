@@ -1,0 +1,1 @@
+/Users/xusanyuan/Documents/task/learningTask/contractproject/stake-contract/hello_rust/target/debug/hello_rust: /Users/xusanyuan/Documents/task/learningTask/contractproject/stake-contract/hello_rust/src/main.rs

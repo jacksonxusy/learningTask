@@ -1,0 +1,19 @@
+{
+  "name": "Digital Art #1",
+  "description": "Unique digital artwork created with passion and creativity",
+  "image": "https://gateway.pinata.cloud/ipfs/bafybeicme5cg6l6pgb2g5nk7olcam3m3il5pklch7cv7vwildajb556ije",
+  "attributes": [
+    {
+      "trait_type": "Style",
+      "value": "Digital Art"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Artist",
+      "value": "Anonymous"
+    }
+  ]
+}
